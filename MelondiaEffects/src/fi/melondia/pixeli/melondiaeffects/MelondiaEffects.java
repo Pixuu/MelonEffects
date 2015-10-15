@@ -33,7 +33,7 @@ public class MelondiaEffects extends JavaPlugin implements Listener {
 		getCommand("meffect1").setExecutor(new Commands(this));
 		getCommand("meffect2").setExecutor(new gadget2(this));
 
-		logger.info(pdfFile.getName() + " on enabloitu (versio" + pdfFile.getVersion() + ")");
+		logger.info(pdfFile.getName() + " on enabloitu (Uus :o Versio" + pdfFile.getVersion() + ")");
 		this.getServer().getPluginManager().registerEvents(this, this);
 	}
 
