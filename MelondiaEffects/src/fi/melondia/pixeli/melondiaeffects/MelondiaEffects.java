@@ -41,7 +41,7 @@ public class MelondiaEffects extends JavaPlugin implements Listener {
 		PluginDescriptionFile pdfFile = getDescription();
 		Logger logger = getLogger();
 
-		logger.info(pdfFile.getName() + " on disabloitu (Versio" + pdfFile.getVersion() + ")");
+		logger.info(pdfFile.getName() + " on disabloitu (VERSIO" + pdfFile.getVersion() + ")");
 	}
 
 	@EventHandler
