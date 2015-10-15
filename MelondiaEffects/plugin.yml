@@ -1,0 +1,9 @@
+main: fi.melondia.pixeli.melondiaeffects.MelondiaEffects
+version: 1.1
+name: MelondiaEffects
+
+commands:
+  meffect1:
+    description: Nothing To Show
+  meffect2:
+    description: Nothing To Show
