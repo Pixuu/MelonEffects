@@ -13,7 +13,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -33,7 +32,7 @@ public class MelondiaEffects extends JavaPlugin implements Listener {
 		getCommand("meffect1").setExecutor(new Commands(this));
 		getCommand("meffect2").setExecutor(new gadget2(this));
 
-		logger.info(pdfFile.getName() + " on enabloitu (versio" + pdfFile.getVersion() + ")");
+		logger.info(pdfFile.getName() + " on enabloitu (Uus versio" + pdfFile.getVersion() + ")");
 		this.getServer().getPluginManager().registerEvents(this, this);
 	}
 
