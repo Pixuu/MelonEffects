@@ -15,8 +15,10 @@ import fi.melondia.pixeli.melondiaeffects.MelondiaEffects;
 public class gadget2 implements CommandExecutor {
 
 	public List<Player> playerOnDeny = new ArrayList<Player>();
+	private MelondiaEffects plugin;
 
 	public gadget2(MelondiaEffects plugin) {
+		this.plugin = plugin;
 	}
 
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -33,6 +35,9 @@ public class gadget2 implements CommandExecutor {
 				Snowball snow = player.getWorld().spawn(loc, Snowball.class);
 				snow.setShooter(player);
 				snow.setVelocity(player.getEyeLocation().getDirection().multiply(2));
+				
+				if (snow.isDead())
+					player.sendMessage("Mo");
 			}
 		}
 

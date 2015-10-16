@@ -68,9 +68,6 @@ public class EventListener implements Listener {
 	@EventHandler
 	public void onProjectileHitEvent(ProjectileHitEvent event) {
 		Entity e = event.getEntity();
-
-		Player player = (Player) e;
-		player.sendMessage("e");
 	}
 
 	//invi alkaa tästä
@@ -108,9 +105,9 @@ public class EventListener implements Listener {
 		info.setItemMeta(infoMeta);
 
 		inv.setItem(11, pet);
-		inv.setItem(14, trails);
-		inv.setItem(32, vip);
-		inv.setItem(34, info);
+		inv.setItem(15, trails);
+		inv.setItem(31, vip);
+		inv.setItem(33, info);
 
 		player.openInventory(inv);
 	}

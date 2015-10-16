@@ -31,6 +31,7 @@ import fi.melondia.pixeli.melondiaeffects.tasks.MelonThrowTask;
 public class MelondiaEffects extends JavaPlugin {
 
 	private List<String> fallingBlockIDs = new ArrayList<String>();
+	private List<String> snowballIDs = new ArrayList<String>();
 	private MelondiaEffects instance;
 
 	// ProtocolLib start
@@ -102,4 +103,9 @@ public class MelondiaEffects extends JavaPlugin {
 	public List<String> getFallingBlockIDList() {
 		return this.fallingBlockIDs;
 	}
+	
+	public List<String> getsnowballIDs() {
+		return this.snowballIDs;
+	}
+	
 }
