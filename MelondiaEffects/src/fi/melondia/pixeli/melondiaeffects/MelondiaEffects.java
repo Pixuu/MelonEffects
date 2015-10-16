@@ -1,209 +1,105 @@
 package fi.melondia.pixeli.melondiaeffects;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Logger;
+import java.util.Map;
+import java.util.Random;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.Sound;
+import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.EnumWrappers.PlayerAction;
+
 import fi.melondia.pixeli.melondiaeffects.commands.Commands;
 import fi.melondia.pixeli.melondiaeffects.commands.gadget2;
+import fi.melondia.pixeli.melondiaeffects.listeners.EventListener;
+import fi.melondia.pixeli.melondiaeffects.tasks.MelonThrowTask;
 
-public class MelondiaEffects extends JavaPlugin implements Listener {
-	public List<String> lista = new ArrayList<String>();
+public class MelondiaEffects extends JavaPlugin {
 
+	private List<String> fallingBlockIDs = new ArrayList<String>();
+	private MelondiaEffects instance;
+
+	// ProtocolLib start
+	private ProtocolManager protocolManager;
+	private Map<String, BukkitRunnable> protocolLibTasks = new HashMap<String, BukkitRunnable>();
+	private Map<String, Long> protocolLibCooldown = new HashMap<String, Long>();
+	//ProtocolLib end
+
+
+	@Override
 	public void onEnable() {
-		PluginDescriptionFile pdfFile = getDescription();
-		Logger logger = getLogger();
+		instance = this;
+		this.getCommand("meffect1").setExecutor(new Commands(this));
+		this.getCommand("meffect2").setExecutor(new gadget2(this));
+		new EventListener(this);
 
-		getCommand("meffect1").setExecutor(new Commands(this));
-		getCommand("meffect2").setExecutor(new gadget2(this));
+		// ProtocolLib start
+		protocolManager = ProtocolLibrary.getProtocolManager();
+		protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Client.ENTITY_ACTION) {
 
-		logger.info(pdfFile.getName() + " on enabloitu (UUUUUUSSSSII versio" + pdfFile.getVersion() + ")");
-		this.getServer().getPluginManager().registerEvents(this, this);
-	}
-
-	public void onDisable() {
-		PluginDescriptionFile pdfFile = getDescription();
-		Logger logger = getLogger();
-
-		logger.info(pdfFile.getName() + " on disabloitu (VERSIO" + pdfFile.getVersion() + ")");
-	}
-
-	
-	//falling block melon
-	@EventHandler
-	public void onTransform(EntityChangeBlockEvent e) {
-		if (e.getEntityType().equals(EntityType.FALLING_BLOCK)) {
-			if (lista.contains(String.valueOf(((FallingBlock) e.getEntity()).getBlockId()))) {
-				e.getEntity().remove();
-				e.setCancelled(true);
-				lista.remove(String.valueOf(((FallingBlock) e.getEntity()).getBlockId()));
-			}
-		}
-	}
-
-	@EventHandler
-	public void onInt(PlayerInteractEvent e) {
-		if (e.getAction().equals(Action.RIGHT_CLICK_AIR) || e.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-			Player player = e.getPlayer();
-
-			ItemStack is = player.getItemInHand();
-
-			if (is.hasItemMeta()) {
-				ItemMeta im = is.getItemMeta();
-
-				if (im.hasDisplayName()) {
-					if (im.getDisplayName().equalsIgnoreCase("Melon") && is.getType().equals(Material.MELON_BLOCK)) {
-						player.performCommand("meffect1");
+			@Override
+			public void onPacketReceiving(final PacketEvent event) {
+				if (event.getPacket().getPlayerActions().getValues().get(0).equals(PlayerAction.STOP_SNEAKING)) {
+					if (protocolLibTasks.containsKey(event.getPlayer().getName())) {
+						protocolLibTasks.get(event.getPlayer().getName()).cancel();
+						protocolLibTasks.remove(event.getPlayer().getName());
 					}
-					if (im.getDisplayName().equalsIgnoreCase("Melon2") && is.getType().equals(Material.MELON_BLOCK)) {
-						player.performCommand("meffect2");
+				} else if (event.getPacket().getPlayerActions().getValues().get(0).equals(PlayerAction.START_SNEAKING)) {
+					if (protocolLibCooldown.containsKey(event.getPlayer().getName())) {
+						long secondsLeft = ((protocolLibCooldown.get(event.getPlayer().getName()) / 1000) + 1) - (System.currentTimeMillis() / 1000);
+						if (secondsLeft > 0) {
+							return;
+						}
 					}
+					protocolLibCooldown.put(event.getPlayer().getName(), System.currentTimeMillis());
+					if (protocolLibTasks.containsKey(event.getPlayer().getName())) {
+						protocolLibTasks.get(event.getPlayer().getName()).cancel();
+						protocolLibTasks.remove(event.getPlayer().getName());
+					}
+					BukkitRunnable runnable = new BukkitRunnable() {
+
+						public void run() {
+							ItemStack type = new ItemStack(Material.MELON);
+							ItemMeta im = type.getItemMeta();
+							im.setDisplayName(String.valueOf(new Random().nextInt(10000000)));
+							type.setItemMeta(im);
+							Item item = (Item) event.getPlayer().getWorld().dropItem(event.getPlayer().getEyeLocation(), type);
+							float x = (float) -.2 + (float) (Math.random() * ((.2 - -.2) + .1));
+							float y = (float) -.3 + (float) (Math.random() * ((.3 - -.3) + .1));
+							float z = (float) -.2 + (float) (Math.random() * ((.2 - -.2) + .1));
+							item.setVelocity(new Vector(x, y, z).normalize().multiply(1));
+							item.setPickupDelay(Integer.MAX_VALUE);
+							item.getWorld().playSound(item.getLocation(), Sound.CHICKEN_EGG_POP, 2, 0);
+							new MelonThrowTask(item, instance).runTaskTimer(plugin, 1L, 1L);
+						}
+					};
+					runnable.runTaskTimer(plugin, 0L, 20L);
+					protocolLibTasks.put(event.getPlayer().getName(), runnable);
 				}
 			}
-		}
+		});
+		// ProtocolLib end
 	}
 
-	@EventHandler
-	public void onProjectileHitEvent(ProjectileHitEvent event) {
-		Entity e = event.getEntity();
-				
-		Player player = (Player) e;
-		player.sendMessage("e");
+	@Override
+	public void onDisable() {
+		
 	}
-	
-	
-	
-	//invi alkaa t‰st‰
-	public void openGUI(Player player) {
-		Inventory inv = Bukkit.createInventory(null, 45, "Vip valikko");
-
-		//pet
-		ItemStack pet = new ItemStack(Material.MONSTER_EGG, 1, (short) 50);
-		ItemMeta petMeta = pet.getItemMeta();
-		petMeta.setDisplayName(ChatColor.GREEN + "Avaa Lemmikit valikko");
-		pet.setItemMeta(petMeta);
-		
-		
-		//trails
-		ItemStack trails = new ItemStack(Material.BLAZE_POWDER);
-		ItemMeta trailsMeta = trails.getItemMeta();
-		trailsMeta.setDisplayName(ChatColor.GREEN + "Avaa Trails valikko");
-		trails.setItemMeta(trailsMeta);		
-
-		//gadgetit...
-		ItemStack gadgets = new ItemStack(Material.REDSTONE_TORCH_ON);
-		ItemMeta gadgetsMeta = gadgets.getItemMeta();
-		gadgetsMeta.setDisplayName(ChatColor.GREEN + "Avaa gadgets valikko");
-		gadgets.setItemMeta(gadgetsMeta);				
-		
-		//Osta vip valikko (Avaa buycraftin valikon)
-		ItemStack vip = new ItemStack(Material.GOLD_INGOT);
-		ItemMeta vipMeta = vip.getItemMeta();
-		vipMeta.setDisplayName(ChatColor.GREEN + "Lue lis‰‰ BuyCraft kaupassamme (Avaa valikon)");
-		vip.setItemMeta(vipMeta);	
-		
-		//Vip -info linkki
-		ItemStack info = new ItemStack(Material.BOOK);
-		ItemMeta infoMeta = info.getItemMeta();
-		infoMeta.setDisplayName(ChatColor.GREEN + "Avaa linkki josta katsoa VIP pelaajien oikeuksia");
-		info.setItemMeta(infoMeta);	
-		
-		
-		inv.setItem(11, pet);
-		inv.setItem(14, trails);
-		inv.setItem(32, vip);
-		inv.setItem(34, info);
-
-		player.openInventory(inv);
+	public List<String> getFallingBlockIDList() {
+		return this.fallingBlockIDs;
 	}
-
-	@EventHandler
-	public void onInventoryClick(InventoryClickEvent event) {
-		if (!ChatColor.stripColor(event.getInventory().getName()).equalsIgnoreCase("vip valikko"))
-			return;
-		Player player = (Player) event.getWhoClicked();
-		event.setCancelled(true);
-
-		if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR
-				|| !event.getCurrentItem().hasItemMeta()) {
-			player.closeInventory();
-			return;
-		}
-		switch(event.getCurrentItem().getType()){
-		case MONSTER_EGG:
-			//En tied‰ toimiiko koska Monster egiss‰ id...
-			player.chat("/pet select");
-			player.closeInventory();
-			break;
-		case GOLD_INGOT:
-			//T‰ll‰hetkell‰ servulla k‰ytˆss‰ komento /vip joka avaa buycraft valikon, se pit‰‰ viel‰ vaihtaa -->
-			player.chat("/vips");
-			player.closeInventory();
-			break;
-		case BOOK:
-			player.sendMessage(ChatColor.DARK_AQUA + "" + ChatColor.STRIKETHROUGH + "----------------------------------");
-			player.sendMessage(ChatColor.DARK_AQUA + "== ");
-			player.sendMessage(ChatColor.DARK_AQUA + "== " + ChatColor.GREEN + "Katso vippien oikeuksia oheisesta linkist‰:");
-			player.sendMessage(ChatColor.DARK_AQUA + "== " + ChatColor.GREEN + "www.Melondia.fi/vip <- Klikkaa lnikki‰");
-			player.sendMessage(ChatColor.DARK_AQUA + "== ");
-			player.sendMessage(ChatColor.DARK_AQUA + "" + ChatColor.STRIKETHROUGH + "----------------------------------");
-			player.closeInventory();
-			break;
-		case BLAZE_POWDER:
-			player.chat("/trails");
-			player.closeInventory();
-			break;
-		case REDSTONE_TORCH_ON:
-			player.chat("/gadgets");
-			player.closeInventory();
-			break;
-		default:
-			player.closeInventory();
-			break;
-		
-		}
-	}
-
-
-	@EventHandler
-	public void onPlayerInteract(PlayerInteractEvent event) {
-		Action a = event.getAction();
-		ItemStack is = event.getItem();
-
-		if (a == Action.PHYSICAL || is == null || is.getType() == Material.AIR)
-			return;
-
-	}
-	
-	@EventHandler
-	  public void onCmd(PlayerCommandPreprocessEvent e) {
-	   if((e.getMessage().equalsIgnoreCase("/vip"))) {
-		   openGUI(e.getPlayer());
-	   }
-
-}
-	
-	
-	
-	
 }

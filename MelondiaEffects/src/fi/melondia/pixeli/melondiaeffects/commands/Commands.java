@@ -23,6 +23,7 @@ public class Commands implements CommandExecutor {
 		this.plugin = plugin;
 	}
 
+	@SuppressWarnings("deprecation")
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (!(sender instanceof Player)) {
 			sender.sendMessage("You must be a player to use this command");
@@ -30,11 +31,11 @@ public class Commands implements CommandExecutor {
 		}
 		Player player = (Player) sender;
 
-		if (label.equalsIgnoreCase("meffect1")) {
+		if (command.getName().equalsIgnoreCase("meffect1")) {
 			if (cooldown.containsKey(player.getName())) {
 				long secondsLeft = ((cooldown.get(player.getName()) / 1000) + 5) - (System.currentTimeMillis() / 1000);
 				if (secondsLeft > 0) {
-					player.sendMessage("§aVoit käyttää erikoiskykyäsi uudelleen " + secondsLeft + " sekunnin jälkeen.");
+					player.sendMessage("§aVoit käyttää tätä uudelleen " + secondsLeft + " sekunnin jälkeen.");
 					return true;
 				}
 			}
@@ -44,10 +45,8 @@ public class Commands implements CommandExecutor {
 				float y = (float) -3 + (float) (Math.random() * ((3 - -3) + 1));
 				float z = (float) -2 + (float) (Math.random() * ((2 - -2) + 1));
 
-				@SuppressWarnings("deprecation")
-				FallingBlock fb = player.getWorld().spawnFallingBlock(player.getLocation(), Material.MELON_BLOCK,
-						(byte) 0);
-				plugin.lista.add(String.valueOf(fb.getBlockId()));
+				FallingBlock fb = player.getWorld().spawnFallingBlock(player.getLocation(), Material.MELON_BLOCK, (byte) 0);
+				plugin.getFallingBlockIDList().add(String.valueOf(fb.getBlockId()));
 				fb.setDropItem(false);
 				fb.setVelocity(new Vector(x, y, z).normalize());
 			}
